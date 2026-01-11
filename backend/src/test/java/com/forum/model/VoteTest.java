@@ -1,9 +1,5 @@
 package com.forum.model;
 
-import com.forum.model.Vote;
-import com.forum.model.User;
-import com.forum.model.Post;
-import com.forum.model.Comment;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;

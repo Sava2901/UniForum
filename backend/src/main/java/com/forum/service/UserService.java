@@ -11,6 +11,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 
+/**
+ * Service for user management.
+ */
 @Service
 public class UserService {
     @Autowired
@@ -26,6 +29,9 @@ public class UserService {
     @Autowired
     private ForumService forumService;
 
+    /**
+     * Registers a new user and links to university data if available.
+     */
     public User register(RegisterRequest request) {
         if (userRepository.existsByEmail(request.getEmail())) {
             throw new RuntimeException("Email already exists");
@@ -40,27 +46,27 @@ public class UserService {
         user.setEmail(request.getEmail());
         user.setPassword(passwordEncoder.encode(request.getPassword()));
         
-        // Public registration is ONLY for Students
+        // Default role is STUDENT
         user.setRole(Role.STUDENT); 
         
-        // Check University DB
+        // Check if student exists in university DB
         var uniStudent = uniStudentRepo.findByEmail(request.getEmail());
         
         if (uniStudent.isPresent()) {
-            // Auto-verify and assign
+            // Auto-verify if found in university DB
             user.setVerified(true);
             user.setStudyYear(uniStudent.get().getYear());
             user.setSemester(uniStudent.get().getSemester());
             user.setGroupName(uniStudent.get().getGroupName());
 
-            // Auto-enroll in courses matching year/semester
-            // Logic moved to after save to ensure User has ID
+            // Courses will be linked below
+            
         } else {
-            // Not in Uni DB -> Unverified
+            // Require email verification
             user.setVerified(false);
         }
 
-        // Nickname required for students
+        // Nickname check
         if (request.getNickname() == null || request.getNickname().isBlank()) {
              throw new RuntimeException("Nickname is required for students");
         }
@@ -68,7 +74,7 @@ public class UserService {
         
         User savedUser = userRepository.save(user);
 
-        // If verified (student found), enroll in courses
+        // Link courses if verified
         if (savedUser.isVerified() && savedUser.getRole() == Role.STUDENT) {
             var uniStudentOpt = uniStudentRepo.findByEmail(request.getEmail());
             if (uniStudentOpt.isPresent()) {
@@ -100,14 +106,23 @@ public class UserService {
         return savedUser;
     }
     
+    /**
+     * Retrieves unverified users.
+     */
     public List<User> getPendingUsers() {
         return userRepository.findByVerifiedFalse();
     }
     
+    /**
+     * Retrieves users with professor role.
+     */
     public List<User> getProfessors() {
         return userRepository.findByRole(Role.PROFESSOR);
     }
     
+    /**
+     * Marks a user as verified.
+     */
     public void verifyUser(Long userId) {
         if (userId == null) throw new RuntimeException("User ID cannot be null");
         User user = userRepository.findById(userId).orElseThrow(() -> new RuntimeException("User not found"));
@@ -116,14 +131,23 @@ public class UserService {
         emailService.sendVerificationEmail(savedUser.getEmail());
     }
     
+    /**
+     * Finds a user by email.
+     */
     public User findByEmail(String email) {
         return userRepository.findByEmail(email).orElseThrow(() -> new RuntimeException("User not found"));
     }
     
+    /**
+     * Retrieves all users.
+     */
     public List<User> getAllUsers() {
         return userRepository.findAll();
     }
 
+    /**
+     * Syncs student data with university records.
+     */
     @Transactional
     public void syncStudentData(String email) {
         User user = userRepository.findByEmail(email).orElse(null);
@@ -143,16 +167,16 @@ public class UserService {
                 user.setGroupName(uniStudent.getGroupName());
                 changed = true;
                 
-                // Group changed, ensure subforums exist for all enrolled courses
+                // Update forums for new group
                 if (user.getCourses() != null) {
-                    // Force initialization if lazy
+                    // Force load
                     user.getCourses().size(); 
                     for (UniversityCourse course : user.getCourses()) {
                         forumService.createGroupSubforumIfMissing(course, user.getGroupName());
                     }
                 }
             }
-            // Auto-verify if found in Uni DB
+            
             if (!user.isVerified()) {
                 user.setVerified(true);
                 changed = true;

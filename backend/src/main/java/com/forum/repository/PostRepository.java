@@ -6,5 +6,5 @@ import java.util.List;
 
 public interface PostRepository extends JpaRepository<Post, Long> {
     List<Post> findByForumIdOrderByIsPinnedDescScoreDescTimestampDesc(Long forumId);
-    // Ordered by: Pinned first, then Score (highest), then Newest
+    
 }

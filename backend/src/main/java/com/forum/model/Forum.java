@@ -29,7 +29,7 @@ public class Forum {
 
     @ManyToOne
     @JoinColumn(name = "professor_id")
-    private User professor; // Assigned professor
+    private User professor; 
 
     public enum ForumType {
         MAIN_COURSE,

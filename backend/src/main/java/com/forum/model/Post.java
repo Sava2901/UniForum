@@ -24,7 +24,7 @@ public class Post {
     @Lob
     @NotBlank(message = "Content is required")
     @Column(columnDefinition = "TEXT")
-    private String content; // Rich text
+    private String content; 
 
     @ManyToOne
     @JoinColumn(name = "author_id", nullable = false)

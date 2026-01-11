@@ -49,7 +49,7 @@ public class User {
     private String groupName;
 
     private Integer studyYear;
-    private Integer semester; // Nullable for non-students
+    private Integer semester; 
 
     @ManyToMany(mappedBy = "enrolledUsers")
     @JsonIgnore

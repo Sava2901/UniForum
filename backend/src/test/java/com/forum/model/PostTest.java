@@ -1,9 +1,5 @@
 package com.forum.model;
 
-import com.forum.model.Post;
-import com.forum.model.User;
-import com.forum.model.Forum;
-import com.forum.model.Comment;
 import org.junit.jupiter.api.Test;
 import java.time.LocalDateTime;
 import java.util.ArrayList;

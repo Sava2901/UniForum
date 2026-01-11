@@ -19,9 +19,9 @@ public class RegisterRequest {
     @NotBlank
     private String confirmPassword;
     
-    private String nickname; // Required for students
+    private String nickname; 
     
-    private Role role; // User selects their role (Admin approves it)
+    private Role role; 
     
-    private Long groupId; // For students
+    private Long groupId; 
 }

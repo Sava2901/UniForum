@@ -23,9 +23,9 @@ public class Notification {
     @Column(nullable = false)
     private String message;
 
-    private String type; // e.g., "OFFICIAL_REPLY"
+    private String type; 
 
-    private Long relatedEntityId; // e.g., Post ID or Comment ID
+    private Long relatedEntityId; 
 
     private boolean isRead = false;
 

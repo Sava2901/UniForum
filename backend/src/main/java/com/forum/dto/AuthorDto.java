@@ -10,7 +10,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class AuthorDto {
     private Long id;
-    private String displayName; // Nickname for students, Full Name for Professors/Admins
+    private String displayName; 
     private Role role;
-    private String email; // Null for students, populated for Professors/Admins
+    private String email; 
 }

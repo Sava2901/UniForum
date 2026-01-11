@@ -10,8 +10,8 @@ const api = axios.create({
 });
 
 api.interceptors.request.use(config => {
-    // Skip adding auth header for auth endpoints to prevent 401 errors
-    // if there is a stale/invalid token in localStorage
+    
+    
     if (config.url && config.url.includes('/auth/')) {
         return config;
     }

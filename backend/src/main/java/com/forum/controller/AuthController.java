@@ -3,21 +3,21 @@ package com.forum.controller;
 import com.forum.dto.RegisterRequest;
 import com.forum.dto.LoginRequest;
 import com.forum.service.UserService;
-import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import com.forum.dto.JwtResponse;
 import com.forum.security.jwt.JwtUtils;
-import com.forum.security.services.UserDetailsImpl;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
+/**
+ * Controller for handling authentication requests (registration, login).
+ */
 @RestController
 @RequestMapping("/api/auth")
-// @CrossOrigin(origins = "http://localhost:5173") // Handled globally in SecurityConfig
 public class AuthController {
     @Autowired
     private UserService userService;
@@ -26,6 +26,11 @@ public class AuthController {
     @Autowired
     private JwtUtils jwtUtils;
 
+    /**
+     * Registers a new user.
+     * @param request The registration details.
+     * @return The registered user or an error message.
+     */
     @PostMapping("/register")
     public ResponseEntity<?> register(@RequestBody RegisterRequest request) {
         try {
@@ -35,10 +40,15 @@ public class AuthController {
         }
     }
 
+    /**
+     * Authenticates a user and generates a JWT token.
+     * @param request The login credentials.
+     * @return A JWT response containing the token and user details.
+     */
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginRequest request) {
         try {
-            // Sync data first if applicable
+            // Sync student data with university database if applicable
             userService.syncStudentData(request.getEmail());
             
             Authentication authentication = authenticationManager.authenticate(
@@ -46,13 +56,6 @@ public class AuthController {
 
             SecurityContextHolder.getContext().setAuthentication(authentication);
             String jwt = jwtUtils.generateJwtToken(authentication);
-            
-            UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
-            // Fetch full user details to get fields not in UserDetailsImpl if needed, 
-            // but UserDetailsImpl should be enough or we can fetch from DB.
-            // Let's rely on UserDetailsImpl + what we know or fetch DB if nickname is missing from UserDetailsImpl
-            // Actually, my UserDetailsImpl doesn't store nickname/groupName etc.
-            // So I should fetch the User entity.
             
             var user = userService.findByEmail(request.getEmail());
             

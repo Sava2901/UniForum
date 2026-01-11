@@ -7,6 +7,10 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAlert } from '@/context/AlertContext';
 
+/**
+ * Registration page component.
+ * Allows new users to create an account.
+ */
 const Register: React.FC = () => {
     const [formData, setFormData] = useState({
         firstName: '', lastName: '', email: '', password: '', confirmPassword: '', role: 'STUDENT', nickname: ''
@@ -21,7 +25,7 @@ const Register: React.FC = () => {
     const handleRegister = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
-            // Ensure role is always STUDENT
+            
             await AuthService.register({ ...formData, role: 'STUDENT' });
             showAlert('Registration successful! Please wait for admin verification.', 'Success');
             navigate('/login');

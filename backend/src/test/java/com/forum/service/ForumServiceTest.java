@@ -1,6 +1,5 @@
 package com.forum.service;
 
-import com.forum.dto.CommentResponse;
 import com.forum.model.*;
 import com.forum.repository.CommentRepository;
 import com.forum.repository.PostRepository;
@@ -13,11 +12,11 @@ import org.mockito.MockitoAnnotations;
 
 import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
+@SuppressWarnings("null")
 class ForumServiceTest {
 
     @Mock

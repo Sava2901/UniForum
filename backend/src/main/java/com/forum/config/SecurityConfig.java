@@ -49,9 +49,9 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/api/auth/**").permitAll()
                 .requestMatchers("/ws/**").permitAll()
-                // Require ADMIN role for admin endpoints
+                
                 .requestMatchers("/api/admin/**").hasAuthority("ADMIN") 
-                // All other requests need authentication
+                
                 .anyRequest().authenticated()
             );
             

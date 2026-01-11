@@ -14,9 +14,14 @@ import {
 import { Avatar, AvatarFallback } from './ui/avatar';
 import { Mail } from 'lucide-react';
 import { Client } from '@stomp/stompjs';
-// @ts-ignore
+
 import SockJS from 'sockjs-client';
 
+/**
+ * Navigation bar component.
+ * Displays user info, notifications, and navigation links.
+ * Handles WebSocket connection for real-time notifications.
+ */
 const Navbar: React.FC = () => {
     const navigate = useNavigate();
     const user = AuthService.getCurrentUser();
@@ -25,12 +30,12 @@ const Navbar: React.FC = () => {
     useEffect(() => {
         if (!user) return;
 
-        // Fetch initial notifications
+        
         NotificationService.getUserNotifications().then(res => {
             setNotifications(res.data.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()));
         }).catch(err => console.error("Failed to fetch notifications", err));
 
-        // WebSocket connection
+        
         const socket = new SockJS('http://localhost:8080/ws');
         const stompClient = new Client({
             webSocketFactory: () => socket,
@@ -40,7 +45,7 @@ const Navbar: React.FC = () => {
                     setNotifications(prev => [newNotification, ...prev]);
                 });
             },
-            // debug: (str) => console.log(str),
+            
         });
 
         stompClient.activate();
@@ -83,7 +88,7 @@ const Navbar: React.FC = () => {
                 </div>
                 
                 <div className="flex items-center gap-4">
-                    {/* Notification Icon */}
+                    {}
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                             <Button variant="ghost" className="relative h-8 w-8 rounded-full p-2">

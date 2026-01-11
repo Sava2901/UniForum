@@ -12,10 +12,10 @@ public interface ForumRepository extends JpaRepository<Forum, Long> {
     Optional<Forum> findByCourseAndType(UniversityCourse course, Forum.ForumType type);
     Optional<Forum> findByCourseAndGroupNameAndType(UniversityCourse course, String groupName, Forum.ForumType type);
     
-    // For getting all forums visible to a user
+    
     List<Forum> findByCourseInAndType(List<UniversityCourse> courses, Forum.ForumType type);
     List<Forum> findByCourseInAndGroupNameAndType(List<UniversityCourse> courses, String groupName, Forum.ForumType type);
     
-    // For professors
+    
     List<Forum> findByProfessorId(Long professorId);
 }

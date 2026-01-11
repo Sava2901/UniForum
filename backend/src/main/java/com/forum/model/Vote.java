@@ -27,5 +27,5 @@ public class Vote {
     @JoinColumn(name = "comment_id")
     private Comment comment;
 
-    private int value; // 1 or -1
+    private int value; 
 }

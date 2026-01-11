@@ -17,6 +17,9 @@ import com.forum.model.university.UniversityProfessor;
 import com.forum.repository.university.UniversityProfessorRepository;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+/**
+ * Service for administrative operations.
+ */
 @Service
 @Transactional
 public class AdminService {
@@ -35,6 +38,9 @@ public class AdminService {
     @Autowired
     private ForumService forumService;
 
+    /**
+     * Syncs professor data from university records.
+     */
     public void syncProfessors() {
         List<UniversityProfessor> uniProfessors = uniProfessorRepo.findAll();
         
@@ -54,6 +60,9 @@ public class AdminService {
         }
     }
 
+    /**
+     * Moves a student to a different group and updates forum access.
+     */
     public void moveStudent(String studentEmail, String newGroupName) {
         User user = userRepository.findByEmail(studentEmail)
                 .orElseThrow(() -> new RuntimeException("Student not found"));
@@ -61,9 +70,9 @@ public class AdminService {
         user.setGroupName(newGroupName);
         userRepository.save(user);
         
-        // Ensure subforums exist for all enrolled courses with the new group
+        // Update subforum access
         if (user.getCourses() != null) {
-            // Force init if lazy
+            // Force initialization if lazy loaded (though not needed with Transactional usually)
             user.getCourses().size();
             for (UniversityCourse course : user.getCourses()) {
                 forumService.createGroupSubforumIfMissing(course, newGroupName);
@@ -71,7 +80,13 @@ public class AdminService {
         }
     }
     
+    /**
+     * Assigns a professor to a forum.
+     */
     public void assignProfessor(Long forumId, Long professorId) {
+        if (forumId == null || professorId == null) {
+            throw new IllegalArgumentException("Forum ID and Professor ID cannot be null");
+        }
         Forum forum = forumRepository.findById(forumId)
                 .orElseThrow(() -> new RuntimeException("Forum not found"));
                 
@@ -86,7 +101,13 @@ public class AdminService {
         forumRepository.save(forum);
     }
     
+    /**
+     * Removes a professor from a forum.
+     */
     public void removeProfessorFromForum(Long forumId) {
+        if (forumId == null) {
+            throw new IllegalArgumentException("Forum ID cannot be null");
+        }
         Forum forum = forumRepository.findById(forumId)
                 .orElseThrow(() -> new RuntimeException("Forum not found"));
         
@@ -94,11 +115,17 @@ public class AdminService {
         forumRepository.save(forum);
     }
 
+    /**
+     * Deletes a user and cleans up associated data.
+     */
     public void deleteUser(Long userId) {
+        if (userId == null) {
+            throw new IllegalArgumentException("User ID cannot be null");
+        }
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
         
-        // Remove from courses enrolled
+        // Remove from enrolled courses
         if (user.getCourses() != null) {
             for (UniversityCourse course : user.getCourses()) {
                 course.getEnrolledUsers().remove(user);
@@ -106,7 +133,7 @@ public class AdminService {
             }
         }
         
-        // Remove from assigned forums (as professor)
+        // Remove from taught forums
         List<Forum> taughtForums = forumRepository.findByProfessorId(userId);
         for (Forum forum : taughtForums) {
             forum.setProfessor(null);
@@ -125,20 +152,26 @@ public class AdminService {
         userRepository.delete(user);
     }
 
+    /**
+     * Removes a student from a course.
+     */
     public void removeStudentFromCourse(Long userId, Long courseId) {
+        if (userId == null || courseId == null) {
+            throw new IllegalArgumentException("User ID and Course ID cannot be null");
+        }
         UniversityCourse course = uniCourseRepo.findById(courseId)
                 .orElseThrow(() -> new RuntimeException("Course not found"));
         User student = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
                 
         if (course.getEnrolledUsers() != null) {
-            // Remove by ID to ensure it works even if object references differ
+            // Remove user from course's enrolled list
             boolean removed = course.getEnrolledUsers().removeIf(u -> u.getId().equals(student.getId()));
             
             if (removed) {
                 uniCourseRepo.save(course);
                 
-                // Also explicitly remove from student's course list if initialized (inverse side)
+                // Also remove course from user's course list
                 if (student.getCourses() != null) {
                     student.getCourses().removeIf(c -> c.getId().equals(course.getId()));
                 }
@@ -146,7 +179,13 @@ public class AdminService {
         }
     }
 
+    /**
+     * Grants a student access to a restricted forum.
+     */
     public void assignStudentToForum(Long userId, Long forumId) {
+        if (userId == null || forumId == null) {
+            throw new IllegalArgumentException("User ID and Forum ID cannot be null");
+        }
         Forum forum = forumRepository.findById(forumId)
                 .orElseThrow(() -> new RuntimeException("Forum not found"));
         User student = userRepository.findById(userId)
@@ -160,11 +199,20 @@ public class AdminService {
         forumRepository.save(forum);
     }
     
+    /**
+     * Creates a new university course.
+     */
     public UniversityCourse createUniversityCourse(@NonNull UniversityCourse course) {
         return uniCourseRepo.save(course);
     }
     
+    /**
+     * Enrolls a student in a course.
+     */
     public void enrollStudentInCourse(Long studentId, Long courseId) {
+        if (studentId == null || courseId == null) {
+            throw new IllegalArgumentException("Student ID and Course ID cannot be null");
+        }
         User student = userRepository.findById(studentId)
                 .orElseThrow(() -> new RuntimeException("Student not found"));
         
@@ -175,7 +223,7 @@ public class AdminService {
             course.setEnrolledUsers(new java.util.ArrayList<>());
         }
         
-        // Check by ID to be safe
+        // Check if already enrolled
         boolean alreadyEnrolled = course.getEnrolledUsers().stream()
                 .anyMatch(u -> u.getId().equals(student.getId()));
                 
@@ -183,7 +231,7 @@ public class AdminService {
             course.getEnrolledUsers().add(student);
             uniCourseRepo.save(course);
             
-            // Update inverse side for consistency
+            // Add to student's course list as well
             if (student.getCourses() == null) {
                 student.setCourses(new java.util.ArrayList<>());
             }
@@ -196,11 +244,17 @@ public class AdminService {
         }
     }
     
+    /**
+     * Updates user information.
+     */
     public void updateUser(Long userId, User updatedData) {
+        if (userId == null) {
+            throw new IllegalArgumentException("User ID cannot be null");
+        }
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
         
-        // Track changes
+        // Check if group changed
         boolean groupChanged = updatedData.getGroupName() != null && !updatedData.getGroupName().equals(user.getGroupName());
         
         user.setFirstName(updatedData.getFirstName());
@@ -215,9 +269,9 @@ public class AdminService {
         
         userRepository.save(user);
         
-        // If group changed, ensure subforums exist for all enrolled courses
+        // If group changed, ensure subforums exist
         if (groupChanged && user.getRole() == Role.STUDENT && user.getCourses() != null) {
-            // Force init if lazy
+            // Force init
             user.getCourses().size();
             for (UniversityCourse course : user.getCourses()) {
                 forumService.createGroupSubforumIfMissing(course, user.getGroupName());
@@ -225,6 +279,9 @@ public class AdminService {
         }
     }
 
+    /**
+     * Batch enrolls students based on year and semester.
+     */
     public void enrollStudents() {
         List<UniversityCourse> courses = uniCourseRepo.findAll();
         List<User> students = userRepository.findByRole(Role.STUDENT);
@@ -236,7 +293,7 @@ public class AdminService {
             }
             
             for (User student : students) {
-                // Check if student matches course year and semester
+                // Match based on year and semester
                 if (student.getStudyYear() != null && student.getSemester() != null &&
                     student.getStudyYear() == course.getYear() && 
                     student.getSemester() == course.getSemester()) {
@@ -254,6 +311,9 @@ public class AdminService {
         }
     }
     
+    /**
+     * Retrieves unique group names.
+     */
     public List<String> getAllGroupNames() {
         return uniStudentRepo.findAll().stream()
                 .map(com.forum.model.university.UniversityStudent::getGroupName)
@@ -261,23 +321,29 @@ public class AdminService {
                 .collect(Collectors.toList());
     }
     
+    /**
+     * Deletes all forums.
+     */
     public void clearForums() {
         forumRepository.deleteAll();
     }
 
+    /**
+     * Initializes default forums for courses and groups.
+     */
     public void initializeForums() {
-        // Sync Groups from University DB to App DB (Just group names now)
+        // Get all unique groups
         List<com.forum.model.university.UniversityStudent> allStudents = uniStudentRepo.findAll();
         List<String> groupNames = allStudents.stream()
                 .map(com.forum.model.university.UniversityStudent::getGroupName)
                 .distinct()
                 .collect(Collectors.toList());
         
-        // For each course in the App DB
+        // For each course, create main forum and group subforums
         List<UniversityCourse> courses = uniCourseRepo.findAll();
         
         for (UniversityCourse course : courses) {
-            // 1. Create Main Course Forum if not exists
+            // Main course forum
             if (forumRepository.findByCourseAndType(course, Forum.ForumType.MAIN_COURSE).isEmpty()) {
                 Forum mainForum = new Forum();
                 mainForum.setCourse(course);
@@ -285,10 +351,10 @@ public class AdminService {
                 forumRepository.save(mainForum);
             }
             
-            // 2. Create Sub-forums for each Group enrolled in this course
-            // Logic: Group is enrolled if at least one student in that group is in the course's year/semester
+            // Group subforums
+            // Only create if there are students in that group for that year/semester
             for (String groupName : groupNames) {
-                // Find a representative student for this group
+                // Check if any student in this group is in the course's year/semester
                 var representativeStudent = allStudents.stream()
                         .filter(s -> s.getGroupName().equals(groupName))
                         .findFirst();

@@ -4,6 +4,10 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/com
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 
+/**
+ * Forum list page.
+ * Displays all forums available to the user, grouped by course.
+ */
 const ForumList: React.FC = () => {
     const [forums, setForums] = useState<Forum[]>([]);
     const navigate = useNavigate();
@@ -12,7 +16,7 @@ const ForumList: React.FC = () => {
         ForumService.getForums().then(setForums).catch(console.error);
     }, []);
 
-    // Group forums by Course ID
+    // Group forums by course ID
     const groupedForums = React.useMemo(() => {
         const groups: Record<number, { courseName: string; forums: Forum[] }> = {};
         
@@ -28,7 +32,7 @@ const ForumList: React.FC = () => {
             }
         });
         
-        // Sort forums within each group: Main Course first, then others
+        
         Object.values(groups).forEach(group => {
             group.forums.sort((a, b) => {
                 if (a.type === 'MAIN_COURSE') return -1;

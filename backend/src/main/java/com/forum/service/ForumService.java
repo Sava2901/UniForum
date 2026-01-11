@@ -6,7 +6,6 @@ import com.forum.dto.PostResponse;
 import com.forum.model.*;
 import com.forum.model.university.UniversityCourse;
 import com.forum.repository.*;
-import com.forum.repository.university.UniversityCourseRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -14,6 +13,9 @@ import java.util.List;
 import java.util.ArrayList;
 import java.util.stream.Collectors;
 
+/**
+ * Service for forum business logic, including posts, comments, and votes.
+ */
 @Service
 public class ForumService {
     @Autowired
@@ -26,11 +28,11 @@ public class ForumService {
     private UserRepository userRepository;
 
     @Autowired
-    private UniversityCourseRepository uniCourseRepo;
-
-    @Autowired
     private NotificationService notificationService;
 
+    /**
+     * Creates a group subforum if it doesn't exist for a given course and group.
+     */
     public void createGroupSubforumIfMissing(UniversityCourse course, String groupName) {
         if (course == null || groupName == null) return;
         
@@ -43,6 +45,9 @@ public class ForumService {
         }
     }
 
+    /**
+     * Retrieves relevant forums based on user role and enrollment.
+     */
     @Transactional
     public List<Forum> getForumsForUser(String email) {
         User user = userRepository.findByEmail(email).orElseThrow(() -> new RuntimeException("User not found"));
@@ -55,14 +60,12 @@ public class ForumService {
             return forumRepository.findByProfessorId(user.getId());
         }
         
-        // For Students:
-        // 1. Get Enrolled Courses (Explicit enrollment only)
+        // Students see forums for their courses
         List<UniversityCourse> relevantCourses = new ArrayList<>();
         if (user.getCourses() != null) {
             relevantCourses.addAll(user.getCourses());
         }
         
-        // Remove duplicates
         relevantCourses = relevantCourses.stream().distinct().toList();
         
         List<Forum> mainForums = new ArrayList<>();
@@ -70,8 +73,7 @@ public class ForumService {
             mainForums = forumRepository.findByCourseInAndType(relevantCourses, Forum.ForumType.MAIN_COURSE);
         }
         
-        // 2. Get Sub-forums for their Group
-        // Logic: Return forums where course is in relevantCourses AND group matches user's group
+        // Add group subforums
         List<Forum> groupForums = new ArrayList<>();
         if (user.getGroupName() != null && !relevantCourses.isEmpty()) {
             groupForums = forumRepository.findByCourseInAndGroupNameAndType(relevantCourses, user.getGroupName(), Forum.ForumType.GROUP_SUBFORUM);
@@ -79,7 +81,7 @@ public class ForumService {
         
         mainForums.addAll(groupForums);
         
-        // 3. Add forums where user is explicitly allowed
+        // Add manually allowed forums
         List<Forum> allowedForums = forumRepository.findAll().stream()
                 .filter(f -> f.getAllowedUsers() != null && f.getAllowedUsers().contains(user))
                 .toList();
@@ -88,6 +90,9 @@ public class ForumService {
         return mainForums.stream().distinct().toList();
     }
 
+    /**
+     * Creates and saves a new post.
+     */
     public PostResponse createPost(Long forumId, String title, String content, String userEmail) {
         if (forumId == null) throw new IllegalArgumentException("Forum ID required");
         User user = userRepository.findByEmail(userEmail).orElseThrow(() -> new RuntimeException("User not found"));
@@ -107,18 +112,27 @@ public class ForumService {
         return mapToPostResponse(savedPost);
     }
     
+    /**
+     * Retrieves posts for a forum, sorted by pin status and score.
+     */
     public List<PostResponse> getPosts(Long forumId) {
         if (forumId == null) throw new IllegalArgumentException("Forum ID required");
         List<Post> posts = postRepository.findByForumIdOrderByIsPinnedDescScoreDescTimestampDesc(forumId);
         return posts.stream().map(this::mapToPostResponse).collect(Collectors.toList());
     }
     
+    /**
+     * Retrieves a single post.
+     */
     public PostResponse getPost(Long postId) {
         if (postId == null) throw new IllegalArgumentException("Post ID required");
         Post post = postRepository.findById(postId).orElseThrow(() -> new RuntimeException("Post not found"));
         return mapToPostResponse(post);
     }
     
+    /**
+     * Adds a comment to a post, handling notifications.
+     */
     public CommentResponse addComment(Long postId, String content, String userEmail, Long parentId) {
         if (postId == null) throw new IllegalArgumentException("Post ID required");
         User user = userRepository.findByEmail(userEmail).orElseThrow(() -> new RuntimeException("User not found"));
@@ -141,9 +155,9 @@ public class ForumService {
         
         Comment savedComment = commentRepository.save(comment);
 
-        // Notification Logic: Notify students if an official (Professor/Admin) responds
+        // Notify students of official responses
         if (user.getRole() == Role.PROFESSOR || user.getRole() == Role.ADMIN) {
-            // 1. Notify Post Author if they are a student
+            // Notify post author if they are a student
             User postAuthor = post.getAuthor();
             if (postAuthor.getRole() == Role.STUDENT && !postAuthor.getId().equals(user.getId())) {
                  boolean isDirectReplyToPostAuthor = (comment.getParent() != null && comment.getParent().getAuthor().getId().equals(postAuthor.getId()));
@@ -158,7 +172,7 @@ public class ForumService {
                  }
             }
 
-            // 2. Notify Parent Comment Author if they are a student
+            // Notify parent comment author if they are a student
             if (comment.getParent() != null) {
                 User parentAuthor = comment.getParent().getAuthor();
                 if (parentAuthor.getRole() == Role.STUDENT && !parentAuthor.getId().equals(user.getId())) {
@@ -178,26 +192,27 @@ public class ForumService {
     @Autowired
     private VoteRepository voteRepository;
 
+    /**
+     * Handles voting on a post.
+     */
     public void votePost(Long postId, int value, String userEmail) {
+        if (postId == null) throw new IllegalArgumentException("Post ID required");
         if (value != 1 && value != -1) throw new IllegalArgumentException("Vote value must be 1 or -1");
         
         User user = userRepository.findByEmail(userEmail).orElseThrow(() -> new RuntimeException("User not found"));
         Post post = postRepository.findById(postId).orElseThrow(() -> new RuntimeException("Post not found"));
         
-        // Check if vote exists
+        // Check existing vote
         Vote existingVote = voteRepository.findByUserIdAndPostId(user.getId(), postId).orElse(null);
         
         if (existingVote != null) {
-            // If clicking same vote, remove it (toggle off)
+            // Undo vote if same value, else change vote
             if (existingVote.getValue() == value) {
                 post.setScore(post.getScore() - value);
                 voteRepository.delete(existingVote);
             } else {
-                // Changing vote (e.g. +1 to -1)
-                // Remove old value (-1) and add new value (-1) -> net -2 change
-                // or remove old value (+1) and add new value (+1)
-                // Actually: old was +1, new is -1. Score should decrease by 2.
-                // old was -1, new is +1. Score should increase by 2.
+                // Change vote: remove old value, add new value (difference is 2*value or similar logic)
+                // Actually: score - old + new
                 post.setScore(post.getScore() - existingVote.getValue() + value);
                 existingVote.setValue(value);
                 voteRepository.save(existingVote);
@@ -214,7 +229,11 @@ public class ForumService {
         postRepository.save(post);
     }
     
+    /**
+     * Handles voting on a comment.
+     */
     public void voteComment(Long commentId, int value, String userEmail) {
+        if (commentId == null) throw new IllegalArgumentException("Comment ID required");
         if (value != 1 && value != -1) throw new IllegalArgumentException("Vote value must be 1 or -1");
         
         User user = userRepository.findByEmail(userEmail).orElseThrow(() -> new RuntimeException("User not found"));
@@ -245,17 +264,9 @@ public class ForumService {
     private PostResponse mapToPostResponse(Post post) {
         List<CommentResponse> commentResponses = new ArrayList<>();
         if (post.getComments() != null) {
-            // Only fetch top-level comments (parent == null)
+            // Sort comments: pinned first, then by score, then by date
             commentResponses = post.getComments().stream()
-                    .filter(c -> c.getParent() == null)
-                    // Sort: Pinned first, then Score (highest), then Newest
-                    // BUT user requirement: "popular responses raising to the surface (but not above the professor direct response)"
-                    // AND "replying to a comment the order should be keep exactly how the messages come in"
-                    
-                    // Sorting logic for Top-Level Comments:
-                    // 1. Pinned (Professor)
-                    // 2. Score (Desc)
-                    // 3. Timestamp (Desc) - usually new popular ones first or old ones? Reddit uses "Best". Let's stick to Score Desc.
+                    .filter(c -> c.getParent() == null) // Top level comments
                     .sorted((c1, c2) -> {
                         if (c1.isPinned() != c2.isPinned()) return c1.isPinned() ? -1 : 1;
                         if (c1.getScore() != c2.getScore()) return c2.getScore() - c1.getScore();
@@ -282,7 +293,7 @@ public class ForumService {
         List<CommentResponse> replies = new ArrayList<>();
         if (comment.getReplies() != null) {
             replies = comment.getReplies().stream()
-                // Nested comments: "order should be keep exactly how the messages come in" -> Chronological (Oldest first)
+                // Replies sorted by date usually
                 .sorted((c1, c2) -> c1.getTimestamp().compareTo(c2.getTimestamp()))
                 .map(this::mapToCommentResponse)
                 .collect(Collectors.toList());
@@ -306,15 +317,15 @@ public class ForumService {
         dto.setRole(user.getRole());
 
         if (user.getRole() == Role.STUDENT) {
-            // Students: Nickname only, no email
+            // Anonymize students mostly, or show nickname
             dto.setDisplayName(user.getNickname());
             dto.setEmail(null); 
         } else if (user.getRole() == Role.ADMIN) {
-            // Admin: Full Name, NO Email
+            // Admins show name
             dto.setDisplayName(user.getFirstName() + " " + user.getLastName());
             dto.setEmail(null);
         } else {
-            // Professors: Full Name + Email
+            // Professors show name and email
             dto.setDisplayName(user.getFirstName() + " " + user.getLastName());
             dto.setEmail(user.getEmail());
         }

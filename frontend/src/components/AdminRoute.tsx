@@ -10,7 +10,7 @@ const AdminRoute: React.FC = () => {
     }
     
     if (currentUser.role !== 'ADMIN') {
-        // Redirect non-admins to forums or some other page
+        
         return <Navigate to="/forums" replace />;
     }
     

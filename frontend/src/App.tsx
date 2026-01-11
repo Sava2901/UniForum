@@ -19,7 +19,7 @@ const App: React.FC = () => {
                     <Route path="/login" element={<Login />} />
                     <Route path="/register" element={<Register />} />
                     
-                    {/* Protected Routes for All Authenticated Users */}
+                    {}
                     <Route element={<ProtectedRoute />}>
                         <Route element={<Layout />}>
                             <Route path="/forums" element={<ForumList />} />
@@ -29,7 +29,7 @@ const App: React.FC = () => {
                         </Route>
                     </Route>
                     
-                    {/* Protected Routes for Admins Only */}
+                    {}
                     <Route element={<AdminRoute />}>
                         <Route element={<Layout />}>
                             <Route path="/admin" element={<AdminDashboard />} />

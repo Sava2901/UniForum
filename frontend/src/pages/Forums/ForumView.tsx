@@ -7,12 +7,16 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 
+/**
+ * Forum view page.
+ * Displays the list of posts within a specific forum and allows creating new posts.
+ */
 const ForumView: React.FC = () => {
     const { forumId } = useParams<{ forumId: string }>();
     const [posts, setPosts] = useState<Post[]>([]);
     const navigate = useNavigate();
     
-    // New Post State
+    
     const [title, setTitle] = useState('');
     const [content, setContent] = useState('');
     const [open, setOpen] = useState(false);
@@ -22,7 +26,7 @@ const ForumView: React.FC = () => {
         if (forumId) {
             ForumService.getPosts(Number(forumId)).then(setPosts).catch(console.error);
             
-            // Fetch forum details for title
+            
             ForumService.getForums().then(forums => {
                 const current = forums.find(f => f.id === Number(forumId));
                 if (current) {
@@ -41,7 +45,7 @@ const ForumView: React.FC = () => {
             setOpen(false);
             setTitle('');
             setContent('');
-            // Refresh posts
+            
             ForumService.getPosts(Number(forumId)).then(setPosts);
         }
     };

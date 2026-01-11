@@ -12,6 +12,9 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * Service for handling notifications.
+ */
 @Service
 public class NotificationService {
 
@@ -21,6 +24,9 @@ public class NotificationService {
     @Autowired
     private SimpMessagingTemplate messagingTemplate;
 
+    /**
+     * Creates and sends a notification via WebSocket.
+     */
     @Transactional
     public void createNotification(User recipient, String message, String type, Long relatedEntityId) {
         Notification notification = new Notification();
@@ -46,6 +52,9 @@ public class NotificationService {
         messagingTemplate.convertAndSend("/topic/notifications/" + recipient.getId(), dto);
     }
 
+    /**
+     * Retrieves notifications for a user.
+     */
     public List<NotificationDto> getUserNotifications(User user) {
         return notificationRepository.findByRecipientIdOrderByTimestampDesc(user.getId())
                 .stream()
@@ -59,7 +68,13 @@ public class NotificationService {
                 .collect(Collectors.toList());
     }
     
+    /**
+     * Marks a notification as read.
+     */
     public void markAsRead(Long notificationId) {
+        if (notificationId == null) {
+            return;
+        }
         notificationRepository.findById(notificationId).ifPresent(n -> {
             n.setRead(true);
             notificationRepository.save(n);

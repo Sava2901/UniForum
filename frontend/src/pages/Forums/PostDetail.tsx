@@ -4,11 +4,10 @@ import ForumService, { type Post, type Comment } from '../../services/forum.serv
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 import { useAlert } from '@/context/AlertContext';
-import { ChevronUp, ChevronDown, MessageSquare, Minus, Plus } from 'lucide-react';
+import { ChevronUp, ChevronDown, MessageSquare } from 'lucide-react';
 
 interface CommentItemProps {
     comment: Comment;
@@ -23,6 +22,9 @@ const CommentItem: React.FC<CommentItemProps> = ({ comment, level, onVote, onRep
     const [replyContent, setReplyContent] = useState('');
     const hasReplies = comment.replies && comment.replies.length > 0;
 
+    /**
+     * Handles the submission of a reply.
+     */
     const handleSubmitReply = async () => {
         if (!replyContent.trim()) return;
         await onReply(comment.id, replyContent);
@@ -150,7 +152,7 @@ const PostDetail: React.FC = () => {
         try {
             await ForumService.addComment(Number(postId), commentContent, parentId);
             if (!parentId) setNewComment('');
-            fetchPost(); // Refresh comments
+            fetchPost(); 
         } catch (error) {
             showAlert('Failed to add comment', 'Error');
         }

@@ -7,51 +7,33 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import AdminService, { type User, type Course } from '../services/admin.service';
 
+/**
+ * Admin dashboard component.
+ * Provides functionality for managing users, courses, and forums.
+ */
 const AdminDashboard: React.FC = () => {
     const [unverifiedUsers, setUnverifiedUsers] = useState<User[]>([]);
     const [allUsers, setAllUsers] = useState<User[]>([]);
     const [loading, setLoading] = useState(true);
-
-    // States for Move Student (Now part of general edit)
-    // const [targetEmail, setTargetEmail] = useState('');
-    // const [targetGroup, setTargetGroup] = useState('');
-    
-    // States for Edit User
     const [editingUser, setEditingUser] = useState<User | null>(null);
     const [isEditOpen, setIsEditOpen] = useState(false);
-    
-    // States for Assign Professor
     const [professors, setProfessors] = useState<User[]>([]);
     const [forums, setForums] = useState<any[]>([]);
     const [selectedProfessor, setSelectedProfessor] = useState('');
     const [selectedForum, setSelectedForum] = useState('');
-    
-    // States for Remove Professor
     const [removeProfessorForumId, setRemoveProfessorForumId] = useState('');
-
-    // States for Enroll Student
     const [allCourses, setAllCourses] = useState<Course[]>([]);
     const [enrollStudentId, setEnrollStudentId] = useState('');
     const [enrollCourseId, setEnrollCourseId] = useState('');
-
-    // States for Remove Student
     const [removeStudentId, setRemoveStudentId] = useState('');
-    const [removeCourseId, setRemoveCourseId] = useState('');
-
-    // States for Assign to Forum
+    const [removeCourseId, setRemoveCourseId] = useState('');    
     const [assignForumStudentId, setAssignForumStudentId] = useState('');
     const [assignForumId, setAssignForumId] = useState('');
-    
-    // Search State
     const [searchQuery, setSearchQuery] = useState('');
     
-    // Groups fetched from backend
-    const [groups, setGroups] = useState<string[]>([]);
-
-    // Custom Alert State
     const [alertOpen, setAlertOpen] = useState(false);
     const [alertTitle, setAlertTitle] = useState('');
     const [alertMessage, setAlertMessage] = useState('');
@@ -79,11 +61,11 @@ const AdminDashboard: React.FC = () => {
         try {
             const profs = await AdminService.getProfessors();
             const f = await AdminService.getAllForums();
-            const g = await AdminService.getAllGroups();
+            
             const c = await AdminService.getAllCourses();
             setProfessors(profs);
             setForums(f);
-            setGroups(g);
+            
             setAllCourses(c);
         } catch (error) {
             console.error('Failed to fetch data');
@@ -98,7 +80,7 @@ const AdminDashboard: React.FC = () => {
     const handleVerify = async (userId: number) => {
         try {
             await AdminService.verifyUser(userId);
-            fetchUsers(); // Refresh lists
+            fetchUsers(); 
         } catch (error) {
             showAlert('Error', 'Failed to verify user');
         }
@@ -111,7 +93,7 @@ const AdminDashboard: React.FC = () => {
             await AdminService.updateUser(editingUser.id, editingUser);
             setIsEditOpen(false);
             setEditingUser(null);
-            fetchUsers(); // Refresh list
+            fetchUsers(); 
             showAlert('Success', 'User updated successfully');
         } catch (error) {
             showAlert('Error', 'Failed to update user');
@@ -306,7 +288,7 @@ const AdminDashboard: React.FC = () => {
                         </CardContent>
                     </Card>
                     
-                    {/* Edit User Dialog */}
+                    {}
                     <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
                         <DialogContent className="sm:max-w-[425px]">
                             <DialogHeader>
@@ -529,7 +511,7 @@ const AdminDashboard: React.FC = () => {
                                             </SelectTrigger>
                                             <SelectContent>
                                                 {forums
-                                                    .filter(f => f.professor) // Only show forums that HAVE a professor
+                                                    .filter(f => f.professor) 
                                                     .map(f => (
                                                     <SelectItem key={f.id} value={String(f.id)}>
                                                         {f.course.name} {f.groupName ? `(${f.groupName})` : '(Main)'} 
@@ -546,7 +528,7 @@ const AdminDashboard: React.FC = () => {
                     </div>
                 </TabsContent>
 
-                {/* Custom Alert Dialog */}
+                {}
                 <Dialog open={alertOpen} onOpenChange={setAlertOpen}>
                     <DialogContent>
                         <DialogHeader>

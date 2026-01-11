@@ -21,7 +21,7 @@ public class DataInitializer {
                                          UniversityProfessorRepository profRepo,
                                          AdminService adminService) {
         return args -> {
-            // 0. Populate University Professors DB
+            
             createProfessorIfNotFound(profRepo, "prof.math@uni.edu", "John", "Nash", "Mathematics");
             createProfessorIfNotFound(profRepo, "prof.cs@uni.edu", "Alan", "Turing", "Computer Science");
             createProfessorIfNotFound(profRepo, "prof.physics@uni.edu", "Albert", "Einstein", "Physics");
@@ -31,7 +31,7 @@ public class DataInitializer {
 
             System.out.println("University Professors initialized.");
 
-            // 1. Populate University Students DB
+            
             createStudentIfNotFound(studentRepo, "alice@uni.edu", 1, 1, "Group A");
             createStudentIfNotFound(studentRepo, "bob@uni.edu", 1, 1, "Group B");
             createStudentIfNotFound(studentRepo, "charlie@uni.edu", 2, 1, "Group A");
@@ -41,7 +41,7 @@ public class DataInitializer {
 
             System.out.println("University Students initialized.");
 
-            // 2. Populate University Courses DB
+            
             createCourseIfNotFound(courseRepo, "Math 101", 1, 1, "Introduction to Mathematics");
             createCourseIfNotFound(courseRepo, "CS 101", 1, 1, "Introduction to Computer Science");
             createCourseIfNotFound(courseRepo, "Physics 101", 1, 1, "Fundamentals of Physics");
@@ -53,16 +53,16 @@ public class DataInitializer {
 
             System.out.println("University Courses initialized.");
             
-            // 3. Auto-create Forums (This would normally be triggered by course creation events)
+            
             try {
-                // Ensure fresh state for development (removes duplicates from schema changes)
-                // adminService.clearForums(); 
                 
-                adminService.syncProfessors(); // Create professor users in main DB
+                
+                
+                adminService.syncProfessors(); 
                 System.out.println("Professors synced to Users DB.");
                 
-                // adminService.enrollStudents();
-                // System.out.println("Students enrolled in courses.");
+                
+                
                 adminService.initializeForums();
                 System.out.println("Forums initialized.");
             } catch (Exception e) {

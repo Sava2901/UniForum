@@ -10,12 +10,19 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 
+/**
+ * Context for managing global alerts/dialogs.
+ */
 interface AlertContextType {
     showAlert: (message: string, title?: string) => void;
 }
 
 const AlertContext = createContext<AlertContextType | undefined>(undefined);
 
+/**
+ * Hook to use the AlertContext.
+ * @throws Error if used outside of AlertProvider.
+ */
 export const useAlert = () => {
     const context = useContext(AlertContext);
     if (!context) {
@@ -28,6 +35,9 @@ interface AlertProviderProps {
     children: ReactNode;
 }
 
+/**
+ * Provider component for global alerts.
+ */
 export const AlertProvider: React.FC<AlertProviderProps> = ({ children }) => {
     const [open, setOpen] = useState(false);
     const [title, setTitle] = useState('');
