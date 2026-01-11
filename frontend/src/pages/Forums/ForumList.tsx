@@ -56,7 +56,7 @@ const ForumList: React.FC = () => {
                         <h2 className="text-2xl font-semibold border-b pb-2">{group.courseName}</h2>
                         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                             {group.forums.map(forum => (
-                                <Card key={forum.id} className="hover:shadow-lg transition-shadow cursor-pointer border-l-4 border-l-primary" onClick={() => navigate(`/forums/${forum.id}`)}>
+                                <Card key={forum.id} className="hover:shadow-lg  cursor-pointer border-l-4 border-l-primary dark:border-l-primary" onClick={() => navigate(`/forums/${forum.id}`)}>
                                     <CardHeader>
                                         <CardTitle className="text-lg">
                                             {forum.type === 'MAIN_COURSE' ? 'Main Course Forum' : `Group: ${forum.groupName}`}
@@ -66,6 +66,11 @@ const ForumList: React.FC = () => {
                                                 ? 'General discussions for all students' 
                                                 : `Private discussions for ${forum.groupName}`}
                                         </CardDescription>
+                                        {forum.professor && (
+                                            <p className="text-sm text-muted-foreground mt-2">
+                                                Professor: <span className="font-medium text-foreground">{forum.professor.firstName} {forum.professor.lastName}</span>
+                                            </p>
+                                        )}
                                     </CardHeader>
                                     <CardContent>
                                         <Button variant="outline" className="w-full">View Discussions</Button>

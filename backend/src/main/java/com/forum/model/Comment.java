@@ -44,4 +44,9 @@ public class Comment {
     private java.util.List<Comment> replies;
 
     private int score = 0;
+
+    private LocalDateTime editedAt;
+
+    @OneToMany(mappedBy = "comment", cascade = CascadeType.ALL, orphanRemoval = true)
+    private java.util.List<Vote> votes;
 }

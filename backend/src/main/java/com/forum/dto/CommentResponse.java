@@ -16,6 +16,7 @@ public class CommentResponse {
     private AuthorDto author;
     private Long postId;
     private LocalDateTime timestamp;
+    private LocalDateTime editedAt;
     private int score;
     private Long parentId;
     private List<CommentResponse> replies;

@@ -43,4 +43,9 @@ public class Post {
     @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
     @OrderBy("isPinned DESC, timestamp ASC")
     private List<Comment> comments;
+
+    private LocalDateTime editedAt;
+
+    @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Vote> votes;
 }

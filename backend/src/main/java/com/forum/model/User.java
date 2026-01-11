@@ -33,6 +33,7 @@ public class User {
     private String email;
 
     @NotBlank(message = "Password is required")
+    @JsonIgnore
     private String password;
 
     @Enumerated(EnumType.STRING)

@@ -1,26 +1,35 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import ForumService, { type Post, type Comment } from '../../services/forum.service';
+import AuthService from '../../services/auth.service';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 import { useAlert } from '@/context/AlertContext';
-import { ChevronUp, ChevronDown, MessageSquare } from 'lucide-react';
+import { ChevronUp, ChevronDown, MessageSquare, Trash2, Edit2, X, Check } from 'lucide-react';
+import { ConfirmationDialog } from '@/components/ConfirmationDialog';
 
 interface CommentItemProps {
     comment: Comment;
     level: number;
+    isAdmin: boolean;
+    currentUserId?: number;
     onVote: (type: 'post' | 'comment', id: number, value: number) => void;
     onReply: (parentId: number, content: string) => Promise<void>;
+    onDelete: (commentId: number) => Promise<void>;
+    onEdit: (commentId: number, content: string) => Promise<void>;
 }
 
-const CommentItem: React.FC<CommentItemProps> = ({ comment, level, onVote, onReply }) => {
+const CommentItem: React.FC<CommentItemProps> = ({ comment, level, isAdmin, currentUserId, onVote, onReply, onDelete, onEdit }) => {
     const [areRepliesHidden, setAreRepliesHidden] = useState(false);
     const [isReplying, setIsReplying] = useState(false);
+    const [isEditing, setIsEditing] = useState(false);
     const [replyContent, setReplyContent] = useState('');
+    const [editContent, setEditContent] = useState(comment.content);
     const hasReplies = comment.replies && comment.replies.length > 0;
+    const isAuthor = currentUserId === comment.author.id;
 
     /**
      * Handles the submission of a reply.
@@ -32,16 +41,25 @@ const CommentItem: React.FC<CommentItemProps> = ({ comment, level, onVote, onRep
         setIsReplying(false);
     };
 
+    /**
+     * Handles the submission of an edit.
+     */
+    const handleSubmitEdit = async () => {
+        if (!editContent.trim()) return;
+        await onEdit(comment.id, editContent);
+        setIsEditing(false);
+    };
+
     return (
-        <div className={`mt-4 ${level > 0 ? 'ml-8 border-l-2 pl-4' : ''}`}>
-            <Card className={comment.pinned ? "border-yellow-400 border-2" : ""}>
+        <div className={`mt-4 ${level > 0 ? 'ml-8 border-l-2 pl-4 border-l-border' : ''}`}>
+            <Card className={comment.pinned ? "border-yellow-400 dark:border-yellow-600 border-2" : ""}>
                 <CardHeader className="pb-2">
                     <div className="flex justify-between text-sm text-muted-foreground">
                         <span className="font-semibold text-foreground flex items-center gap-2">
                             {comment.author.displayName}
                             {comment.author.email && <span className="font-normal text-muted-foreground">({comment.author.email})</span>}
                             {comment.author.role === 'PROFESSOR' && (
-                                <Badge className="bg-yellow-400 text-yellow-900 hover:bg-yellow-400 pointer-events-none select-none border-yellow-500">
+                                <Badge className="bg-yellow-400 text-yellow-900 hover:bg-yellow-400 dark:bg-yellow-600 dark:text-yellow-100 dark:hover:bg-yellow-600 pointer-events-none select-none border-yellow-500">
                                     Professor
                                 </Badge>
                             )}
@@ -52,16 +70,39 @@ const CommentItem: React.FC<CommentItemProps> = ({ comment, level, onVote, onRep
                             )}
                         </span>
                         <span>{format(new Date(comment.timestamp), 'PPpp')}</span>
+                        {comment.editedAt && <span className="text-xs text-muted-foreground ml-1">(edited {format(new Date(comment.editedAt), 'PPpp')})</span>}
                     </div>
                 </CardHeader>
                 <CardContent>
-                    <p className="whitespace-pre-wrap mb-4">{comment.content}</p>
+                    {isEditing ? (
+                        <div className="mb-4 space-y-2">
+                            <Textarea 
+                                value={editContent}
+                                onChange={(e) => setEditContent(e.target.value)}
+                                className="min-h-[80px]"
+                            />
+                            <div className="flex gap-2">
+                                <Button size="sm" onClick={handleSubmitEdit}>
+                                    <Check className="h-4 w-4 mr-1" /> Save
+                                </Button>
+                                <Button size="sm" variant="ghost" onClick={() => {
+                                    setIsEditing(false);
+                                    setEditContent(comment.content);
+                                }}>
+                                    <X className="h-4 w-4 mr-1" /> Cancel
+                                </Button>
+                            </div>
+                        </div>
+                    ) : (
+                        <p className="whitespace-pre-wrap mb-4">{comment.content}</p>
+                    )}
+                    
                     <div className="flex items-center gap-4">
                         <div className="flex items-center gap-1 bg-secondary rounded-md p-1">
                             <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={() => onVote('comment', comment.id, 1)}>
                                 <ChevronUp className="h-4 w-4" />
                             </Button>
-                            <span className="text-sm font-bold w-4 text-center">{comment.score}</span>
+                            <span className="text-sm font-bold min-w-4 text-center">{comment.score}</span>
                             <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={() => onVote('comment', comment.id, -1)}>
                                 <ChevronDown className="h-4 w-4" />
                             </Button>
@@ -69,6 +110,16 @@ const CommentItem: React.FC<CommentItemProps> = ({ comment, level, onVote, onRep
                         <Button variant="ghost" size="sm" className="h-8 gap-2" onClick={() => setIsReplying(!isReplying)}>
                             <MessageSquare className="h-4 w-4" /> Reply
                         </Button>
+                        {isAuthor && !isEditing && (
+                            <Button variant="ghost" size="sm" className="h-8 gap-2" onClick={() => setIsEditing(true)}>
+                                <Edit2 className="h-4 w-4" /> Edit
+                            </Button>
+                        )}
+                        {(isAdmin || isAuthor) && (
+                            <Button variant="ghost" size="sm" className="h-8 gap-2 text-destructive hover:text-destructive" onClick={() => onDelete(comment.id)}>
+                                <Trash2 className="h-4 w-4" /> Delete
+                            </Button>
+                        )}
                         {hasReplies && (
                             <Button 
                                 variant="ghost" 
@@ -112,8 +163,12 @@ const CommentItem: React.FC<CommentItemProps> = ({ comment, level, onVote, onRep
                             key={reply.id} 
                             comment={reply} 
                             level={level + 1} 
+                            isAdmin={isAdmin}
+                            currentUserId={currentUserId}
                             onVote={onVote} 
                             onReply={onReply}
+                            onDelete={onDelete}
+                            onEdit={onEdit}
                         />
                     ))}
                 </div>
@@ -129,12 +184,20 @@ const PostDetail: React.FC = () => {
     const [post, setPost] = useState<Post | null>(null);
     const [newComment, setNewComment] = useState('');
     const [loading, setLoading] = useState(true);
+    const [isEditingPost, setIsEditingPost] = useState(false);
+    const [editPostContent, setEditPostContent] = useState('');
+    const [deleteConfirmation, setDeleteConfirmation] = useState<{ type: 'post' | 'comment', id: number } | null>(null);
+
+    const user = AuthService.getCurrentUser();
+    const isAdmin = user?.role === 'ADMIN';
+    const isAuthor = user?.id === post?.author?.id;
 
     const fetchPost = async () => {
         if (!postId) return;
         try {
             const data = await ForumService.getPost(Number(postId));
             setPost(data);
+            setEditPostContent(data.content);
         } catch (error) {
             console.error('Failed to fetch post', error);
         } finally {
@@ -171,6 +234,56 @@ const PostDetail: React.FC = () => {
         }
     };
 
+    const handleDeletePost = async () => {
+        setDeleteConfirmation({ type: 'post', id: post!.id });
+    };
+
+    const handleDeleteComment = async (commentId: number) => {
+        setDeleteConfirmation({ type: 'comment', id: commentId });
+    };
+
+    const confirmDelete = async () => {
+        if (!deleteConfirmation) return;
+
+        try {
+            if (deleteConfirmation.type === 'post') {
+                await ForumService.deletePost(deleteConfirmation.id);
+                showAlert('Post deleted', 'Success');
+                navigate(-1);
+            } else {
+                await ForumService.deleteComment(deleteConfirmation.id);
+                fetchPost();
+                showAlert('Comment deleted', 'Success');
+            }
+        } catch (error) {
+            showAlert(`Failed to delete ${deleteConfirmation.type}`, 'Error');
+        } finally {
+            setDeleteConfirmation(null);
+        }
+    };
+
+    const handleEditPost = async () => {
+        if (!editPostContent.trim()) return;
+        try {
+            await ForumService.updatePost(post!.id, editPostContent);
+            setIsEditingPost(false);
+            fetchPost();
+            showAlert('Post updated', 'Success');
+        } catch (error) {
+            showAlert('Failed to update post', 'Error');
+        }
+    };
+
+    const handleEditComment = async (commentId: number, content: string) => {
+        try {
+            await ForumService.updateComment(commentId, content);
+            fetchPost();
+            showAlert('Comment updated', 'Success');
+        } catch (error) {
+            showAlert('Failed to update comment', 'Error');
+        }
+    };
+
     if (loading) return <div className="p-6">Loading...</div>;
     if (!post) return <div className="p-6">Post not found</div>;
 
@@ -199,6 +312,7 @@ const PostDetail: React.FC = () => {
                                     <CardTitle className="text-2xl">{post.title}</CardTitle>
                                     <CardDescription>
                                         Posted by {post.author.displayName} {post.author.email && <span>({post.author.email})</span>} • {format(new Date(post.timestamp), 'PPpp')}
+                                        {post.editedAt && <span className="text-muted-foreground ml-1">(edited {format(new Date(post.editedAt), 'PPpp')})</span>}
                                         {post.author.role === 'ADMIN' && (
                                             <Badge variant="destructive" className="ml-2 pointer-events-none select-none">
                                                 Admin
@@ -206,13 +320,46 @@ const PostDetail: React.FC = () => {
                                         )}
                                     </CardDescription>
                                 </div>
-                                {post.pinned && <Badge>Pinned</Badge>}
+                                <div className="flex items-center gap-2">
+                                    {post.pinned && <Badge>Pinned</Badge>}
+                                    {isAuthor && !isEditingPost && (
+                                        <Button variant="ghost" size="sm" onClick={() => setIsEditingPost(true)}>
+                                            <Edit2 className="h-5 w-5" />
+                                        </Button>
+                                    )}
+                                    {(isAdmin || isAuthor) && (
+                                        <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive" onClick={handleDeletePost}>
+                                            <Trash2 className="h-5 w-5" />
+                                        </Button>
+                                    )}
+                                </div>
                             </div>
                         </CardHeader>
                         <CardContent>
-                            <div className="prose dark:prose-invert max-w-none whitespace-pre-wrap">
-                                {post.content}
-                            </div>
+                            {isEditingPost ? (
+                                <div className="space-y-4">
+                                    <Textarea 
+                                        value={editPostContent}
+                                        onChange={(e) => setEditPostContent(e.target.value)}
+                                        className="min-h-[200px]"
+                                    />
+                                    <div className="flex gap-2">
+                                        <Button onClick={handleEditPost}>
+                                            <Check className="h-4 w-4 mr-2" /> Save Changes
+                                        </Button>
+                                        <Button variant="ghost" onClick={() => {
+                                            setIsEditingPost(false);
+                                            setEditPostContent(post.content);
+                                        }}>
+                                            <X className="h-4 w-4 mr-2" /> Cancel
+                                        </Button>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="prose dark:prose-invert max-w-none whitespace-pre-wrap">
+                                    {post.content}
+                                </div>
+                            )}
                         </CardContent>
                     </Card>
 
@@ -235,8 +382,12 @@ const PostDetail: React.FC = () => {
                                     key={comment.id} 
                                     comment={comment} 
                                     level={0} 
-                                    onVote={handleVote} 
+                                    isAdmin={isAdmin}
+                                    currentUserId={user?.id}
+                                    onVote={handleVote}
                                     onReply={handleAddComment}
+                                    onDelete={handleDeleteComment}
+                                    onEdit={handleEditComment}
                                 />
                             ))}
                             
@@ -247,6 +398,17 @@ const PostDetail: React.FC = () => {
                     </div>
                 </div>
             </div>
+
+            <ConfirmationDialog 
+                open={!!deleteConfirmation} 
+                onOpenChange={(open) => !open && setDeleteConfirmation(null)}
+                title={`Delete ${deleteConfirmation?.type}`}
+                description={`Are you sure you want to delete this ${deleteConfirmation?.type}? This action cannot be undone.`}
+                onConfirm={confirmDelete}
+                onCancel={() => setDeleteConfirmation(null)}
+                variant="destructive"
+                confirmText="Delete"
+            />
         </div>
     );
 };

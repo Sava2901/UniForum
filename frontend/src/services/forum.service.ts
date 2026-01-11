@@ -5,6 +5,11 @@ export interface Forum {
     course?: { id: number; name: string };
     groupName?: string;
     type: 'MAIN_COURSE' | 'GROUP_SUBFORUM';
+    professor?: {
+        firstName: string;
+        lastName: string;
+        email: string;
+    };
 }
 
 export interface AuthorDto {
@@ -20,6 +25,7 @@ export interface Post {
     content: string;
     author: AuthorDto;
     timestamp: string;
+    editedAt?: string;
     pinned: boolean;
     score: number;
     comments?: Comment[];
@@ -30,6 +36,7 @@ export interface Comment {
     content: string;
     author: AuthorDto;
     timestamp: string;
+    editedAt?: string;
     pinned: boolean;
     score: number;
     parentId?: number;
@@ -100,6 +107,40 @@ const voteComment = async (commentId: number, value: number) => {
     return await api.post(`/forums/comments/${commentId}/vote`, null, { params: { value } });
 };
 
+/**
+ * Deletes a post.
+ * @param postId The ID of the post
+ */
+const deletePost = async (postId: number) => {
+    return await api.delete(`/forums/posts/${postId}`);
+};
+
+/**
+ * Deletes a comment.
+ * @param commentId The ID of the comment
+ */
+const deleteComment = async (commentId: number) => {
+    return await api.delete(`/forums/comments/${commentId}`);
+};
+
+/**
+ * Updates a post.
+ * @param postId The ID of the post
+ * @param content The new content
+ */
+const updatePost = async (postId: number, content: string) => {
+    return await api.put(`/forums/posts/${postId}`, { content });
+};
+
+/**
+ * Updates a comment.
+ * @param commentId The ID of the comment
+ * @param content The new content
+ */
+const updateComment = async (commentId: number, content: string) => {
+    return await api.put(`/forums/comments/${commentId}`, { content });
+};
+
 export default {
     getForums,
     getPosts,
@@ -107,5 +148,9 @@ export default {
     createPost,
     addComment,
     votePost,
-    voteComment
+    voteComment,
+    deletePost,
+    deleteComment,
+    updatePost,
+    updateComment
 };

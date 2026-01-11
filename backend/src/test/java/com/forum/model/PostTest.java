@@ -28,7 +28,7 @@ class PostTest {
         List<Comment> comments = new ArrayList<>();
         LocalDateTime now = LocalDateTime.now();
 
-        Post post = new Post(100L, "Test Title", "Test Content", author, forum, now, true, 10, comments);
+        Post post = new Post(100L, "Test Title", "Test Content", author, forum, now, true, 10, comments, null, new ArrayList<>());
 
         assertEquals(100L, post.getId());
         assertEquals("Test Title", post.getTitle());

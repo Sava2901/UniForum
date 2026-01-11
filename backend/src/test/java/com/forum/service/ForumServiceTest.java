@@ -15,6 +15,7 @@ import java.util.Optional;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 @SuppressWarnings("null")
 class ForumServiceTest {
@@ -182,5 +183,149 @@ class ForumServiceTest {
                 eq("OFFICIAL_POST_COMMENT"),
                 eq(postId)
         );
+    }
+
+    @Test
+    void testDeletePost_AdminDeletes_ShouldSuccess() {
+        Long postId = 1L;
+        String adminEmail = "admin@univ.edu";
+        
+        User admin = new User();
+        admin.setId(1L);
+        admin.setRole(Role.ADMIN);
+        
+        Post post = new Post();
+        post.setId(postId);
+        User author = new User();
+        author.setId(2L);
+        post.setAuthor(author);
+        
+        when(userRepository.findByEmail(adminEmail)).thenReturn(Optional.of(admin));
+        when(postRepository.findById(postId)).thenReturn(Optional.of(post));
+        
+        forumService.deletePost(postId, adminEmail);
+        
+        verify(postRepository, times(1)).delete(post);
+    }
+
+    @Test
+    void testDeletePost_AuthorDeletes_ShouldSuccess() {
+        Long postId = 1L;
+        String authorEmail = "author@univ.edu";
+        
+        User author = new User();
+        author.setId(2L);
+        author.setRole(Role.STUDENT);
+        
+        Post post = new Post();
+        post.setId(postId);
+        post.setAuthor(author);
+        
+        when(userRepository.findByEmail(authorEmail)).thenReturn(Optional.of(author));
+        when(postRepository.findById(postId)).thenReturn(Optional.of(post));
+        
+        forumService.deletePost(postId, authorEmail);
+        
+        verify(postRepository, times(1)).delete(post);
+    }
+
+    @Test
+    void testDeletePost_OtherUserDeletes_ShouldFail() {
+        Long postId = 1L;
+        String otherEmail = "other@univ.edu";
+        
+        User other = new User();
+        other.setId(3L);
+        other.setRole(Role.STUDENT);
+        
+        User author = new User();
+        author.setId(2L);
+        
+        Post post = new Post();
+        post.setId(postId);
+        post.setAuthor(author);
+        
+        when(userRepository.findByEmail(otherEmail)).thenReturn(Optional.of(other));
+        when(postRepository.findById(postId)).thenReturn(Optional.of(post));
+        
+        assertThrows(RuntimeException.class, () -> forumService.deletePost(postId, otherEmail));
+        verify(postRepository, never()).delete(any());
+    }
+
+    @Test
+    void testUpdatePost_AuthorUpdates_ShouldUpdateContentAndTimestamp() {
+        Long postId = 1L;
+        String authorEmail = "author@univ.edu";
+        String newContent = "Updated Content";
+        
+        User author = new User();
+        author.setId(2L);
+        
+        Post post = new Post();
+        post.setId(postId);
+        post.setAuthor(author);
+        post.setContent("Old Content");
+        Forum forum = new Forum();
+        forum.setId(100L);
+        post.setForum(forum);
+        
+        when(userRepository.findByEmail(authorEmail)).thenReturn(Optional.of(author));
+        when(postRepository.findById(postId)).thenReturn(Optional.of(post));
+        when(postRepository.save(any(Post.class))).thenAnswer(i -> i.getArguments()[0]);
+        
+        forumService.updatePost(postId, newContent, authorEmail);
+        
+        assertEquals(newContent, post.getContent());
+        assertNotNull(post.getEditedAt());
+        verify(postRepository, times(1)).save(post);
+    }
+
+    @Test
+    void testUpdatePost_OtherUserUpdates_ShouldFail() {
+        Long postId = 1L;
+        String otherEmail = "other@univ.edu";
+        
+        User other = new User();
+        other.setId(3L);
+        
+        User author = new User();
+        author.setId(2L);
+        
+        Post post = new Post();
+        post.setId(postId);
+        post.setAuthor(author);
+        
+        when(userRepository.findByEmail(otherEmail)).thenReturn(Optional.of(other));
+        when(postRepository.findById(postId)).thenReturn(Optional.of(post));
+        
+        assertThrows(RuntimeException.class, () -> forumService.updatePost(postId, "New", otherEmail));
+    }
+
+    @Test
+    void testUpdateComment_AuthorUpdates_ShouldUpdateContentAndTimestamp() {
+        Long commentId = 1L;
+        String authorEmail = "author@univ.edu";
+        String newContent = "Updated Comment";
+        
+        User author = new User();
+        author.setId(2L);
+        
+        Comment comment = new Comment();
+        comment.setId(commentId);
+        comment.setAuthor(author);
+        comment.setContent("Old Comment");
+        Post post = new Post();
+        post.setId(200L);
+        comment.setPost(post);
+        
+        when(userRepository.findByEmail(authorEmail)).thenReturn(Optional.of(author));
+        when(commentRepository.findById(commentId)).thenReturn(Optional.of(comment));
+        when(commentRepository.save(any(Comment.class))).thenAnswer(i -> i.getArguments()[0]);
+        
+        forumService.updateComment(commentId, newContent, authorEmail);
+        
+        assertEquals(newContent, comment.getContent());
+        assertNotNull(comment.getEditedAt());
+        verify(commentRepository, times(1)).save(comment);
     }
 }

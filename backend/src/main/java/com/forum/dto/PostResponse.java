@@ -16,6 +16,7 @@ public class PostResponse {
     private AuthorDto author;
     private Long forumId;
     private LocalDateTime timestamp;
+    private LocalDateTime editedAt;
     private boolean isPinned;
     private int score;
     private List<CommentResponse> comments;

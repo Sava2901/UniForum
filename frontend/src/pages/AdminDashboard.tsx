@@ -197,7 +197,7 @@ const AdminDashboard: React.FC = () => {
                     <Button 
                         size="sm" 
                         onClick={() => handleVerify(user.id)}
-                        className="bg-green-600 hover:bg-green-700"
+                        className="bg-green-600 hover:bg-green-700 dark:bg-green-800 dark:hover:bg-green-900"
                     >
                         Verify
                     </Button>

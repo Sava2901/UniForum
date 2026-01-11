@@ -104,4 +104,62 @@ public class ForumController {
         forumService.voteComment(commentId, value, authentication.getName());
         return ResponseEntity.ok("Voted");
     }
+
+    /**
+     * Deletes a post. Only accessible by admins.
+     * @param postId The ID of the post to delete.
+     * @param authentication The current user's authentication.
+     * @return A success message.
+     */
+    @DeleteMapping("/posts/{postId}")
+    public ResponseEntity<?> deletePost(@PathVariable Long postId, Authentication authentication) {
+        try {
+            forumService.deletePost(postId, authentication.getName());
+            return ResponseEntity.ok("Post deleted successfully");
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(403).body(e.getMessage());
+        }
+    }
+
+    /**
+     * Deletes a comment. Only accessible by admins.
+     * @param commentId The ID of the comment to delete.
+     * @param authentication The current user's authentication.
+     * @return A success message.
+     */
+    @DeleteMapping("/comments/{commentId}")
+    public ResponseEntity<?> deleteComment(@PathVariable Long commentId, Authentication authentication) {
+        try {
+            forumService.deleteComment(commentId, authentication.getName());
+            return ResponseEntity.ok("Comment deleted successfully");
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(403).body(e.getMessage());
+        }
+    }
+
+    /**
+     * Updates a post. Accessible only by the author.
+     */
+    @PutMapping("/posts/{postId}")
+    public ResponseEntity<?> updatePost(@PathVariable Long postId, @RequestBody Map<String, String> payload, Authentication authentication) {
+        try {
+            String content = payload.get("content");
+            return ResponseEntity.ok(forumService.updatePost(postId, content, authentication.getName()));
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(403).body(e.getMessage());
+        }
+    }
+
+    /**
+     * Updates a comment. Accessible only by the author.
+     */
+    @PutMapping("/comments/{commentId}")
+    public ResponseEntity<?> updateComment(@PathVariable Long commentId, @RequestBody Map<String, String> payload, Authentication authentication) {
+        try {
+            String content = payload.get("content");
+            return ResponseEntity.ok(forumService.updateComment(commentId, content, authentication.getName()));
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(403).body(e.getMessage());
+        }
+    }
 }

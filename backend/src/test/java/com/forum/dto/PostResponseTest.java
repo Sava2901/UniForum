@@ -24,7 +24,7 @@ class PostResponseTest {
         LocalDateTime now = LocalDateTime.now();
         List<CommentResponse> comments = new ArrayList<>();
 
-        PostResponse response = new PostResponse(200L, "Title", "Content", author, 5L, now, true, 20, comments);
+        PostResponse response = new PostResponse(200L, "Title", "Content", author, 5L, now, null, true, 20, comments);
 
         assertEquals(200L, response.getId());
         assertEquals("Title", response.getTitle());

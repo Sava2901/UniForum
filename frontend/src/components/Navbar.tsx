@@ -12,7 +12,7 @@ import {
     DropdownMenuTrigger 
 } from './ui/dropdown-menu';
 import { Avatar, AvatarFallback } from './ui/avatar';
-import { Mail } from 'lucide-react';
+import { Mail, Moon, Sun } from 'lucide-react';
 import { Client } from '@stomp/stompjs';
 
 import SockJS from 'sockjs-client';
@@ -26,6 +26,29 @@ const Navbar: React.FC = () => {
     const navigate = useNavigate();
     const user = AuthService.getCurrentUser();
     const [notifications, setNotifications] = useState<NotificationDto[]>([]);
+    const [theme, setTheme] = useState<"light" | "dark">("light");
+
+    useEffect(() => {
+        const savedTheme = localStorage.getItem("theme");
+        if (savedTheme === "dark" || (!savedTheme && window.matchMedia("(prefers-color-scheme: dark)").matches)) {
+            setTheme("dark");
+            document.documentElement.classList.add("dark");
+        } else {
+            setTheme("light");
+            document.documentElement.classList.remove("dark");
+        }
+    }, []);
+
+    const toggleTheme = () => {
+        const newTheme = theme === "light" ? "dark" : "light";
+        setTheme(newTheme);
+        localStorage.setItem("theme", newTheme);
+        if (newTheme === "dark") {
+            document.documentElement.classList.add("dark");
+        } else {
+            document.documentElement.classList.remove("dark");
+        }
+    };
 
     useEffect(() => {
         if (!user) return;
@@ -88,11 +111,16 @@ const Navbar: React.FC = () => {
                 </div>
                 
                 <div className="flex items-center gap-4">
-                    {}
+                    <Button variant="ghost" className="relative h-8 w-8 rounded-full p-2" onClick={toggleTheme}>
+                        <Sun className="h-6 w-6 text-foreground rotate-0 scale-100 dark:-rotate-90 dark:scale-0" />
+                        <Moon className="absolute h-6 w-6 text-foreground rotate-90 scale-0 dark:rotate-0 dark:scale-100 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
+                    </Button>
+
+                    {/* Notifications */}
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                             <Button variant="ghost" className="relative h-8 w-8 rounded-full p-2">
-                                <Mail className="h-6 w-6 text-gray-700 dark:text-gray-300" strokeWidth={2}/>
+                                <Mail className="h-6 w-6 text-foreground" strokeWidth={2}/>
                                 {unreadCount > 0 && (
                                     <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] text-white">
                                         {unreadCount}
@@ -114,7 +142,7 @@ const Navbar: React.FC = () => {
                                         onClick={() => handleNotificationClick(notification)}
                                         className="cursor-pointer"
                                     >
-                                        <div className={`flex flex-col gap-1 w-full ${!notification.read ? 'font-semibold bg-slate-50 dark:bg-slate-900 rounded p-1' : ''}`}>
+                                        <div className={`flex flex-col gap-1 w-full ${!notification.read ? 'font-semibold bg-slate-50 dark:bg-slate-800 rounded p-1' : ''}`}>
                                             <span className="text-sm">{notification.message}</span>
                                             <span className="text-xs text-muted-foreground">
                                                 {new Date(notification.timestamp).toLocaleString()}

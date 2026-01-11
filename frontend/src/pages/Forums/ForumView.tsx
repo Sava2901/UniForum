@@ -77,11 +77,16 @@ const ForumView: React.FC = () => {
 
             <div className="space-y-4">
                 {posts.map(post => (
-                    <Card key={post.id} className="cursor-pointer hover:bg-slate-50" onClick={() => navigate(`/forums/posts/${post.id}`)}>
+                    <Card key={post.id} className="cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800" onClick={() => navigate(`/forums/posts/${post.id}`)}>
                         <CardHeader>
                             <div className="flex justify-between items-start">
                                 <CardTitle className="text-xl">{post.title}</CardTitle>
-                                {post.pinned && <span className="bg-yellow-100 text-yellow-800 text-xs px-2 py-1 rounded">Pinned</span>}
+                                <div className="flex items-center gap-2">
+                                    <span className={`text-sm font-bold px-2 py-1 rounded ${post.score > 0 ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : post.score < 0 ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200' : 'bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-200'}`}>
+                                        {post.score > 0 ? '+' : ''}{post.score}
+                                    </span>
+                                    {post.pinned && <span className="bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200 text-xs px-2 py-1 rounded">Pinned</span>}
+                                </div>
                             </div>
                             <p className="text-sm text-muted-foreground">
                                 Posted by {post.author.displayName} {post.author.email && <span className="text-xs">({post.author.email})</span>} • {new Date(post.timestamp).toLocaleDateString()}

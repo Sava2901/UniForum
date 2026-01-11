@@ -261,6 +261,78 @@ public class ForumService {
         commentRepository.save(comment);
     }
 
+    /**
+     * Deletes a post. Accessible by admins or the post author.
+     */
+    @Transactional
+    public void deletePost(Long postId, String userEmail) {
+        if (postId == null) throw new IllegalArgumentException("Post ID required");
+        User user = userRepository.findByEmail(userEmail).orElseThrow(() -> new RuntimeException("User not found"));
+        Post post = postRepository.findById(postId).orElseThrow(() -> new RuntimeException("Post not found"));
+        
+        if (user.getRole() != Role.ADMIN && !post.getAuthor().getId().equals(user.getId())) {
+            throw new RuntimeException("Only admins or the author can delete this post");
+        }
+        if (post != null) {
+            postRepository.delete(post);
+        }
+    }
+
+    /**
+     * Deletes a comment. Accessible by admins or the comment author.
+     */
+    @Transactional
+    public void deleteComment(Long commentId, String userEmail) {
+        if (commentId == null) throw new IllegalArgumentException("Comment ID required");
+        User user = userRepository.findByEmail(userEmail).orElseThrow(() -> new RuntimeException("User not found"));
+        Comment comment = commentRepository.findById(commentId).orElseThrow(() -> new RuntimeException("Comment not found"));
+        
+        if (user.getRole() != Role.ADMIN && !comment.getAuthor().getId().equals(user.getId())) {
+            throw new RuntimeException("Only admins or the author can delete this comment");
+        }
+        if (comment != null) {
+            commentRepository.delete(comment);
+        }
+    }
+
+    /**
+     * Updates a post. Accessible only by the post author.
+     */
+    @Transactional
+    public PostResponse updatePost(Long postId, String newContent, String userEmail) {
+        if (postId == null) throw new IllegalArgumentException("Post ID required");
+        User user = userRepository.findByEmail(userEmail).orElseThrow(() -> new RuntimeException("User not found"));
+        Post post = postRepository.findById(postId).orElseThrow(() -> new RuntimeException("Post not found"));
+        
+        if (!post.getAuthor().getId().equals(user.getId())) {
+            throw new RuntimeException("Only the author can edit this post");
+        }
+        
+        post.setContent(newContent);
+        post.setEditedAt(java.time.LocalDateTime.now());
+        Post updatedPost = postRepository.save(post);
+        return mapToPostResponse(updatedPost);
+    }
+
+    /**
+     * Updates a comment. Accessible only by the comment author.
+     */
+    @Transactional
+    public CommentResponse updateComment(Long commentId, String newContent, String userEmail) {
+        if (commentId == null) throw new IllegalArgumentException("Comment ID required");
+        User user = userRepository.findByEmail(userEmail).orElseThrow(() -> new RuntimeException("User not found"));
+        Comment comment = commentRepository.findById(commentId).orElseThrow(() -> new RuntimeException("Comment not found"));
+        
+        if (!comment.getAuthor().getId().equals(user.getId())) {
+            throw new RuntimeException("Only the author can edit this comment");
+        }
+        
+        comment.setContent(newContent);
+        comment.setEditedAt(java.time.LocalDateTime.now());
+        Comment updatedComment = commentRepository.save(comment);
+        return mapToCommentResponse(updatedComment);
+    }
+
     private PostResponse mapToPostResponse(Post post) {
         List<CommentResponse> commentResponses = new ArrayList<>();
         if (post.getComments() != null) {
@@ -283,6 +355,7 @@ public class ForumService {
                 mapToAuthorDto(post.getAuthor()),
                 post.getForum().getId(),
                 post.getTimestamp(),
+                post.getEditedAt(),
                 post.isPinned(),
                 post.getScore(),
                 commentResponses
@@ -305,6 +378,7 @@ public class ForumService {
                 mapToAuthorDto(comment.getAuthor()),
                 comment.getPost().getId(),
                 comment.getTimestamp(),
+                comment.getEditedAt(),
                 comment.getScore(),
                 comment.getParent() != null ? comment.getParent().getId() : null,
                 replies

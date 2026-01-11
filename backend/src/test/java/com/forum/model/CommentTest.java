@@ -30,7 +30,7 @@ class CommentTest {
         List<Comment> replies = new ArrayList<>();
         LocalDateTime now = LocalDateTime.now();
 
-        Comment comment = new Comment(50L, "Some content", author, post, now, true, parent, replies, 15);
+        Comment comment = new Comment(50L, "Some content", author, post, now, true, parent, replies, 15, null, new ArrayList<>());
 
         assertEquals(50L, comment.getId());
         assertEquals("Some content", comment.getContent());

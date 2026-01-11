@@ -24,7 +24,7 @@ class CommentResponseTest {
         LocalDateTime now = LocalDateTime.now();
         List<CommentResponse> replies = new ArrayList<>();
         
-        CommentResponse response = new CommentResponse(100L, "Content", author, 50L, now, 5, 20L, replies);
+        CommentResponse response = new CommentResponse(100L, "Content", author, 50L, now, null, 5, 20L, replies);
 
         assertEquals(100L, response.getId());
         assertEquals("Content", response.getContent());
